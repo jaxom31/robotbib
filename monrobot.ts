@@ -7,31 +7,31 @@
 namespace monrobot {
 
     //Motor selection enumeration
-    export enum MyEnumMotor {
+    export enum EnumerationMoteur {
         //% block="moteur gauche"
-        LeftMotor,
+        MoteurGauche,
         //% block="moteur droite"
-        RightMotor,
+        MoteurDroit,
         //% block="deux moteurs"
-        AllMotor,
+        TouslesMoteurs,
     };
 
     //Motor direction enumeration selection
-    export enum MyEnumDir {
+    export enum LesDirections {
         //% block="en avant"
-        Forward,
+        EnAvant,
         //% block="en arrière"
-        Backward,
+        EnArriere,
     };
 
     //LED light selection enumeration
-    export enum MyEnumLed {
+    export enum LED {
         //% block="LED gauche"
-        LeftLed,
+        LedGauche,
         //% block="LED droite"
-        RightLed,
+        LedDroite,
         //% block="deux LEDs"
-        AllLed,
+        ToutesLed,
     };
 
     //LED light switch enumeration selection
@@ -81,9 +81,11 @@ namespace monrobot {
         Black = 0x000000
     }
 
-    const I2CADDR = 0x10;
+    const ADRESSEI2C = 0x10;
     const ADC0_REGISTER = 0X1E;
     const ADC1_REGISTER = 0X20;
+    const LIRE_CODEUR_DROIT = 0X06 ;
+    const LIRE_CODEUR_GAUCHE = 0X04;
     const ADC2_REGISTER = 0X22;
     const ADC3_REGISTER = 0X24;
     const ADC4_REGISTER = 0X26;
@@ -104,15 +106,69 @@ namespace monrobot {
     let state: number;
 
     /**
+       * tourneADroite
+       * @param duree number
+       * @param vitesse number
+       */
+
+    //% block="Tourne à droite pendant %duree ms avec une  vitesse: %vitesse"
+    //% weight=96
+    export function tourneADroite(duree:number,vitesse:number) {
+        monrobot.controlMotorStop(EnumerationMoteur.TouslesMoteurs) ;
+        monrobot.activeLesmoteurs(LesDirections.EnAvant, vitesse, LesDirections.EnArriere,vitesse) ;
+        basic.pause(duree) ;
+
+    }
+    /**
+        * tourneAGauche
+        * @param duree number
+        * @param vitesse number
+        */
+    //% block="Tourne à gauche pendant %duree ms avec une  vitesse: %vitesse"
+    //% weight=96
+    export function tourneAGauche(duree: number, vitesse: number) {
+        monrobot.controlMotorStop(EnumerationMoteur.TouslesMoteurs);
+        monrobot.activeLesmoteurs(LesDirections.EnArriere, vitesse, LesDirections.EnAvant, vitesse);
+        basic.pause(duree);
+
+    }
+
+    /**
+       * Nombre de tours de roue droite
+       * 
+       */
+
+    //% block="Nombre de tours moteur droit"
+    //% weight=96
+    export function lireCodeurDroit(): string {
+        pins.i2cWriteNumber(ADRESSEI2C, LIRE_CODEUR_DROIT, NumberFormat.Int8LE);
+        let data = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE);
+        return data.toString() ;
+    }
+
+    /**
+       * Nombre de tours de roue gauche
+       * 
+       */
+
+    //% block="Nombre de tours moteur gauche"
+    //% weight=96
+    export function lireCodeurGauche(): string {
+        pins.i2cWriteNumber(ADRESSEI2C, LIRE_CODEUR_GAUCHE, NumberFormat.Int8LE);
+        let data = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE);
+        return data.toString();
+    }
+
+    /**
      *  Init I2C until success
      */
 
     //% weight=100
     //%block="initialiser le Maqueen"
-    export function I2CInit(): void {
+    export function initialiseRobot(): void {
         let Version_v = 0;
-        pins.i2cWriteNumber(I2CADDR, 0x32, NumberFormat.Int8LE);
-        Version_v = pins.i2cReadNumber(I2CADDR, NumberFormat.Int8LE);
+        pins.i2cWriteNumber(ADRESSEI2C, 0x32, NumberFormat.Int8LE);
+        Version_v = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE);
         while (Version_v == 0) {
             basic.showLeds(`
                 # . . . #
@@ -124,7 +180,7 @@ namespace monrobot {
             basic.pause(500)
             basic.clearScreen()
             pins.i2cWriteNumber(0x10, 0x32, NumberFormat.Int8LE);
-            Version_v = pins.i2cReadNumber(I2CADDR, NumberFormat.Int8LE);
+            Version_v = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE);
         }
         basic.showLeds(`
                 . . . . .
@@ -136,7 +192,27 @@ namespace monrobot {
         basic.pause(500)
         basic.clearScreen()
     }
+    /**
+     * Active les deux moteurs d'un coup
+     * @param directiond moteur droit Enumeration direction
+     * @param vitessed vitesse du moteur droit
+     * @param directiong moteur gauche Enumeration direction
+     *  @param vitesseg vitesse du moteur gauche
+     */
 
+    //% block="activer le moteur droit vers %directiond vitesse %vitessed et le moteur gauche vers %directiong vitesse %vitesseg"
+    //% vitessed.min=0 vitesse.max=255
+    //% vitesseg.min=0 vitesse.max=255
+    //% weight=99
+    export function activeLesmoteurs(directiond: LesDirections, vitessed: number, directiong: LesDirections, vitesseg: number): void {
+                let allBuffer = pins.createBuffer(5);
+                allBuffer[0] = LEFT_MOTOR_REGISTER;
+                allBuffer[1] = directiong;
+                allBuffer[2] = vitesseg;
+                allBuffer[3] = directiond;
+                allBuffer[4] = vitessed;
+                pins.i2cWriteBuffer(ADRESSEI2C, allBuffer)
+    }
     /**
      * Control motor module running
      * @param emotor Motor selection enumeration
@@ -144,33 +220,33 @@ namespace monrobot {
      * @param speed  Motor speed control, eg:100
      */
 
-    //% block="activer %emotor %edir vitesse %speed"
-    //% speed.min=0 speed.max=255
+    //% block="activer %moteur %direction vitesse %vitesse"
+    //% vitesse.min=0 vitesse.max=255
     //% weight=99
-    export function controlMotor(emotor: MyEnumMotor, edir: MyEnumDir, speed: number): void {
-        switch (emotor) {
-            case MyEnumMotor.LeftMotor:
+    export function active(moteur: EnumerationMoteur, direction: LesDirections, vitesse: number): void {
+        switch (moteur) {
+            case EnumerationMoteur.MoteurGauche:
                 let leftBuffer = pins.createBuffer(3);
                 leftBuffer[0] = LEFT_MOTOR_REGISTER;
-                leftBuffer[1] = edir;
-                leftBuffer[2] = speed;
-                pins.i2cWriteBuffer(I2CADDR, leftBuffer);
+                leftBuffer[1] = direction;
+                leftBuffer[2] = vitesse;
+                pins.i2cWriteBuffer(ADRESSEI2C, leftBuffer);
                 break;
-            case MyEnumMotor.RightMotor:
+            case EnumerationMoteur.MoteurDroit:
                 let rightBuffer = pins.createBuffer(3);
                 rightBuffer[0] = RIGHT_MOTOR_REGISTER;
-                rightBuffer[1] = edir;
-                rightBuffer[2] = speed;
-                pins.i2cWriteBuffer(I2CADDR, rightBuffer);
+                rightBuffer[1] = direction;
+                rightBuffer[2] = vitesse;
+                pins.i2cWriteBuffer(ADRESSEI2C, rightBuffer);
                 break;
             default:
                 let allBuffer = pins.createBuffer(5);
                 allBuffer[0] = LEFT_MOTOR_REGISTER;
-                allBuffer[1] = edir;
-                allBuffer[2] = speed;
-                allBuffer[3] = edir;
-                allBuffer[4] = speed;
-                pins.i2cWriteBuffer(I2CADDR, allBuffer)
+                allBuffer[1] = direction;
+                allBuffer[2] = vitesse;
+                allBuffer[3] = direction;
+                allBuffer[4] = vitesse;
+                pins.i2cWriteBuffer(ADRESSEI2C, allBuffer)
                 break;
         }
     }
@@ -182,21 +258,21 @@ namespace monrobot {
 
     //% block="arrêter %emotor"
     //% weight=98
-    export function controlMotorStop(emotor: MyEnumMotor): void {
+    export function controlMotorStop(emotor: EnumerationMoteur): void {
         switch (emotor) {
-            case MyEnumMotor.LeftMotor:
+            case EnumerationMoteur.MoteurGauche:
                 let leftBuffer = pins.createBuffer(3);
                 leftBuffer[0] = LEFT_MOTOR_REGISTER;
                 leftBuffer[1] = 0;
                 leftBuffer[2] = 0;
-                pins.i2cWriteBuffer(I2CADDR, leftBuffer);
+                pins.i2cWriteBuffer(ADRESSEI2C, leftBuffer);
                 break;
-            case MyEnumMotor.RightMotor:
+            case EnumerationMoteur.MoteurDroit:
                 let rightBuffer = pins.createBuffer(3);
                 rightBuffer[0] = RIGHT_MOTOR_REGISTER;
                 rightBuffer[1] = 0;
                 rightBuffer[2] = 0;
-                pins.i2cWriteBuffer(I2CADDR, rightBuffer);
+                pins.i2cWriteBuffer(ADRESSEI2C, rightBuffer);
                 break;
             default:
                 let allBuffer = pins.createBuffer(5);
@@ -205,10 +281,13 @@ namespace monrobot {
                 allBuffer[2] = 0;
                 allBuffer[3] = 0;
                 allBuffer[4] = 0;
-                pins.i2cWriteBuffer(I2CADDR, allBuffer)
+                pins.i2cWriteBuffer(ADRESSEI2C, allBuffer)
                 break;
         }
     }
+
+
+
 
     /**
      * Control left and right LED light switch module
@@ -218,26 +297,26 @@ namespace monrobot {
 
     //% block="contrôler %eled %eSwitch"
     //% weight=97
-    export function controlLED(eled: MyEnumLed, eSwitch: MyEnumSwitch): void {
+    export function controlLED(eled: LED, eSwitch: MyEnumSwitch): void {
         switch (eled) {
-            case MyEnumLed.LeftLed:
+            case LED.LedGauche:
                 let leftLedControlBuffer = pins.createBuffer(2);
                 leftLedControlBuffer[0] = LEFT_LED_REGISTER;
                 leftLedControlBuffer[1] = eSwitch;
-                pins.i2cWriteBuffer(I2CADDR, leftLedControlBuffer);
+                pins.i2cWriteBuffer(ADRESSEI2C, leftLedControlBuffer);
                 break;
-            case MyEnumLed.RightLed:
+            case LED.LedDroite:
                 let rightLedControlBuffer = pins.createBuffer(2);
                 rightLedControlBuffer[0] = RIGHT_LED_REGISTER;
                 rightLedControlBuffer[1] = eSwitch;
-                pins.i2cWriteBuffer(I2CADDR, rightLedControlBuffer);
+                pins.i2cWriteBuffer(ADRESSEI2C, rightLedControlBuffer);
                 break;
             default:
                 let allLedControlBuffer = pins.createBuffer(3);
                 allLedControlBuffer[0] = LEFT_LED_REGISTER;
                 allLedControlBuffer[1] = eSwitch;
                 allLedControlBuffer[2] = eSwitch;
-                pins.i2cWriteBuffer(I2CADDR, allLedControlBuffer);
+                pins.i2cWriteBuffer(ADRESSEI2C, allLedControlBuffer);
                 break;
         }
     }
@@ -250,8 +329,8 @@ namespace monrobot {
     //% block="état capteur de suivi %eline"
     //% weight=96
     export function readLineSensorState(eline: MyEnumLineSensor): number {
-        pins.i2cWriteNumber(I2CADDR, LINE_STATE_REGISTER, NumberFormat.Int8LE);
-        let data = pins.i2cReadNumber(I2CADDR, NumberFormat.Int8LE)
+        pins.i2cWriteNumber(ADRESSEI2C, LINE_STATE_REGISTER, NumberFormat.Int8LE);
+        let data = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE)
         let state;
         switch (eline) {
             case MyEnumLineSensor.SensorL1:
@@ -284,28 +363,28 @@ namespace monrobot {
         let data;
         switch (eline) {
             case MyEnumLineSensor.SensorR2:
-                pins.i2cWriteNumber(I2CADDR, ADC0_REGISTER, NumberFormat.Int8LE);
-                let adc0Buffer = pins.i2cReadBuffer(I2CADDR, 1);
+                pins.i2cWriteNumber(ADRESSEI2C, ADC0_REGISTER, NumberFormat.Int8LE);
+                let adc0Buffer = pins.i2cReadBuffer(ADRESSEI2C, 1);
                 data = adc0Buffer[1] << 8 | adc0Buffer[0]
                 break;
             case MyEnumLineSensor.SensorR1:
-                pins.i2cWriteNumber(I2CADDR, ADC1_REGISTER, NumberFormat.Int8LE);
-                let adc1Buffer = pins.i2cReadBuffer(I2CADDR, 2);
+                pins.i2cWriteNumber(ADRESSEI2C, ADC1_REGISTER, NumberFormat.Int8LE);
+                let adc1Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc1Buffer[1] << 8 | adc1Buffer[0];
                 break;
             case MyEnumLineSensor.SensorM:
-                pins.i2cWriteNumber(I2CADDR, ADC2_REGISTER, NumberFormat.Int8LE);
-                let adc2Buffer = pins.i2cReadBuffer(I2CADDR, 2);
+                pins.i2cWriteNumber(ADRESSEI2C, ADC2_REGISTER, NumberFormat.Int8LE);
+                let adc2Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc2Buffer[1] << 8 | adc2Buffer[0];
                 break;
             case MyEnumLineSensor.SensorL1:
-                pins.i2cWriteNumber(I2CADDR, ADC3_REGISTER, NumberFormat.Int8LE);
-                let adc3Buffer = pins.i2cReadBuffer(I2CADDR, 2);
+                pins.i2cWriteNumber(ADRESSEI2C, ADC3_REGISTER, NumberFormat.Int8LE);
+                let adc3Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc3Buffer[1] << 1 | adc3Buffer[0];
                 break;
             default:
-                pins.i2cWriteNumber(I2CADDR, ADC4_REGISTER, NumberFormat.Int8LE);
-                let adc4Buffer = pins.i2cReadBuffer(I2CADDR, 2);
+                pins.i2cWriteNumber(ADRESSEI2C, ADC4_REGISTER, NumberFormat.Int8LE);
+                let adc4Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc4Buffer[1] << 8 | adc4Buffer[0];
                 break;
 
@@ -321,7 +400,7 @@ namespace monrobot {
 
     //% block="distance en cm (pins TRIG %trig / ECHO %echo)"
     //% weight=94
-    export function readUltrasonic(trig: DigitalPin, echo: DigitalPin): number {
+    export function lireDistance(trig: DigitalPin, echo: DigitalPin): number {
         let data;
         pins.digitalWritePin(trig, 1);
         basic.pause(1);
@@ -354,12 +433,12 @@ namespace monrobot {
     //% block="version"
     //% weight=2
     //% advanced=true
-    export function readVersion(): string {
+    export function lireVersion(): string {
         let version;
-        pins.i2cWriteNumber(I2CADDR, VERSION_CNT_REGISTER, NumberFormat.Int8LE);
-        version = pins.i2cReadNumber(I2CADDR, NumberFormat.Int8LE);
-        pins.i2cWriteNumber(I2CADDR, VERSION_DATA_REGISTER, NumberFormat.Int8LE);
-        version = pins.i2cReadBuffer(I2CADDR, version);
+        pins.i2cWriteNumber(ADRESSEI2C, VERSION_CNT_REGISTER, NumberFormat.Int8LE);
+        version = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE);
+        pins.i2cWriteNumber(ADRESSEI2C, VERSION_DATA_REGISTER, NumberFormat.Int8LE);
+        version = pins.i2cReadBuffer(ADRESSEI2C, version);
         let versionString = version.toString();
         return versionString
     }
