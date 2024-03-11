@@ -12,7 +12,10 @@
         "main.blocks",
         "main.ts",
         "README.md",
-        "monrobot.ts"
+        "monrobot.ts",
+        "camera.ts",
+        "enums.d.ts",
+        "shims.d.ts"
     ],
     "testFiles": [
         "test.ts"
