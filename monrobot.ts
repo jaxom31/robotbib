@@ -43,17 +43,17 @@ namespace monrobot {
     };
 
     //Line sensor selection
-    export enum MyEnumLineSensor {
+    export enum CapteurDeLigne {
         //% block="L1"
-        SensorL1,
+        CapteurL1,
         //% block="M"
-        SensorM,
+        CapteurM,
         //% block="R1"
-        SensorR1,
+        CapteurR1,
         //% block="L2"
-        SensorL2,
+        CapteurL2,
         //% block="R2"
-        SensorR2,
+        CapteurR2,
     };
     /**
      * Well known colors for a NeoPixel strip
@@ -89,11 +89,11 @@ namespace monrobot {
     const ADC2_REGISTER = 0X22;
     const ADC3_REGISTER = 0X24;
     const ADC4_REGISTER = 0X26;
-    const LEFT_LED_REGISTER = 0X0B;
-    const RIGHT_LED_REGISTER = 0X0C;
-    const LEFT_MOTOR_REGISTER = 0X00;
-    const RIGHT_MOTOR_REGISTER = 0X02;
-    const LINE_STATE_REGISTER = 0X1D;
+    const ADRESSE_LED_GAUCHE = 0X0B;
+    const ADRESSE_LED_DROITE = 0X0C;
+    const ADRESSE_MOTEUR_GAUCHE = 0X00;
+    const ADRESSE_MOTEUR_DROITE = 0X02;
+    const ADRESSE_ETAT_LIGNE = 0X1D;
     const VERSION_CNT_REGISTER = 0X32;
     const VERSION_DATA_REGISTER = 0X33;
 
@@ -206,7 +206,7 @@ namespace monrobot {
     //% weight=99
     export function activeLesmoteurs(directiond: LesDirections, vitessed: number, directiong: LesDirections, vitesseg: number): void {
                 let allBuffer = pins.createBuffer(5);
-                allBuffer[0] = LEFT_MOTOR_REGISTER;
+        allBuffer[0] = ADRESSE_MOTEUR_GAUCHE;
                 allBuffer[1] = directiong;
                 allBuffer[2] = vitesseg;
                 allBuffer[3] = directiond;
@@ -227,21 +227,21 @@ namespace monrobot {
         switch (moteur) {
             case EnumerationMoteur.MoteurGauche:
                 let leftBuffer = pins.createBuffer(3);
-                leftBuffer[0] = LEFT_MOTOR_REGISTER;
+                leftBuffer[0] = ADRESSE_MOTEUR_GAUCHE;
                 leftBuffer[1] = direction;
                 leftBuffer[2] = vitesse;
                 pins.i2cWriteBuffer(ADRESSEI2C, leftBuffer);
                 break;
             case EnumerationMoteur.MoteurDroit:
                 let rightBuffer = pins.createBuffer(3);
-                rightBuffer[0] = RIGHT_MOTOR_REGISTER;
+                rightBuffer[0] = ADRESSE_MOTEUR_DROITE;
                 rightBuffer[1] = direction;
                 rightBuffer[2] = vitesse;
                 pins.i2cWriteBuffer(ADRESSEI2C, rightBuffer);
                 break;
             default:
                 let allBuffer = pins.createBuffer(5);
-                allBuffer[0] = LEFT_MOTOR_REGISTER;
+                allBuffer[0] = ADRESSE_MOTEUR_GAUCHE;
                 allBuffer[1] = direction;
                 allBuffer[2] = vitesse;
                 allBuffer[3] = direction;
@@ -262,21 +262,21 @@ namespace monrobot {
         switch (emotor) {
             case EnumerationMoteur.MoteurGauche:
                 let leftBuffer = pins.createBuffer(3);
-                leftBuffer[0] = LEFT_MOTOR_REGISTER;
+                leftBuffer[0] = ADRESSE_MOTEUR_GAUCHE;
                 leftBuffer[1] = 0;
                 leftBuffer[2] = 0;
                 pins.i2cWriteBuffer(ADRESSEI2C, leftBuffer);
                 break;
             case EnumerationMoteur.MoteurDroit:
                 let rightBuffer = pins.createBuffer(3);
-                rightBuffer[0] = RIGHT_MOTOR_REGISTER;
+                rightBuffer[0] = ADRESSE_MOTEUR_DROITE;
                 rightBuffer[1] = 0;
                 rightBuffer[2] = 0;
                 pins.i2cWriteBuffer(ADRESSEI2C, rightBuffer);
                 break;
             default:
                 let allBuffer = pins.createBuffer(5);
-                allBuffer[0] = LEFT_MOTOR_REGISTER;
+                allBuffer[0] = ADRESSE_MOTEUR_GAUCHE;
                 allBuffer[1] = 0;
                 allBuffer[2] = 0;
                 allBuffer[3] = 0;
@@ -301,19 +301,19 @@ namespace monrobot {
         switch (eled) {
             case LED.LedGauche:
                 let leftLedControlBuffer = pins.createBuffer(2);
-                leftLedControlBuffer[0] = LEFT_LED_REGISTER;
+                leftLedControlBuffer[0] = ADRESSE_LED_GAUCHE;
                 leftLedControlBuffer[1] = eSwitch;
                 pins.i2cWriteBuffer(ADRESSEI2C, leftLedControlBuffer);
                 break;
             case LED.LedDroite:
                 let rightLedControlBuffer = pins.createBuffer(2);
-                rightLedControlBuffer[0] = RIGHT_LED_REGISTER;
+                rightLedControlBuffer[0] = ADRESSE_LED_DROITE;
                 rightLedControlBuffer[1] = eSwitch;
                 pins.i2cWriteBuffer(ADRESSEI2C, rightLedControlBuffer);
                 break;
             default:
                 let allLedControlBuffer = pins.createBuffer(3);
-                allLedControlBuffer[0] = LEFT_LED_REGISTER;
+                allLedControlBuffer[0] = ADRESSE_LED_GAUCHE;
                 allLedControlBuffer[1] = eSwitch;
                 allLedControlBuffer[2] = eSwitch;
                 pins.i2cWriteBuffer(ADRESSEI2C, allLedControlBuffer);
@@ -326,23 +326,23 @@ namespace monrobot {
      * @param eline Select the inspection sensor enumeration
      */
 
-    //% block="état capteur de suivi %eline"
+    //% block="état capteur de suivi %capteurligne"
     //% weight=96
-    export function readLineSensorState(eline: MyEnumLineSensor): number {
-        pins.i2cWriteNumber(ADRESSEI2C, LINE_STATE_REGISTER, NumberFormat.Int8LE);
+    export function readLineSensorState(capteurligne: CapteurDeLigne): number {
+        pins.i2cWriteNumber(ADRESSEI2C, ADRESSE_ETAT_LIGNE, NumberFormat.Int8LE);
         let data = pins.i2cReadNumber(ADRESSEI2C, NumberFormat.Int8LE)
         let state;
-        switch (eline) {
-            case MyEnumLineSensor.SensorL1:
+        switch (capteurligne) {
+            case CapteurDeLigne.CapteurL1:
                 state = (data & 0x08) == 0x08 ? 1 : 0;
                 break;
-            case MyEnumLineSensor.SensorM:
+            case CapteurDeLigne.CapteurM:
                 state = (data & 0x04) == 0x04 ? 1 : 0;
                 break;
-            case MyEnumLineSensor.SensorR1:
+            case CapteurDeLigne.CapteurR1:
                 state = (data & 0x02) == 0x02 ? 1 : 0;
                 break;
-            case MyEnumLineSensor.SensorL2:
+            case CapteurDeLigne.CapteurL2:
                 state = (data & 0x10) == 0X10 ? 1 : 0;
                 break;
             default:
@@ -357,27 +357,27 @@ namespace monrobot {
      * @param eline Select the inspection sensor enumeration
      */
 
-    //% block="valeur capteur de suivi %eline"
+    //% block="valeur capteur de suivi %capteurligne"
     //% weight=95
-    export function readLineSensorData(eline: MyEnumLineSensor): number {
+    export function readLineSensorData(capteurligne: CapteurDeLigne): number {
         let data;
-        switch (eline) {
-            case MyEnumLineSensor.SensorR2:
+        switch (capteurligne) {
+            case CapteurDeLigne.CapteurR2:
                 pins.i2cWriteNumber(ADRESSEI2C, ADC0_REGISTER, NumberFormat.Int8LE);
                 let adc0Buffer = pins.i2cReadBuffer(ADRESSEI2C, 1);
                 data = adc0Buffer[1] << 8 | adc0Buffer[0]
                 break;
-            case MyEnumLineSensor.SensorR1:
+            case CapteurDeLigne.CapteurR1:
                 pins.i2cWriteNumber(ADRESSEI2C, ADC1_REGISTER, NumberFormat.Int8LE);
                 let adc1Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc1Buffer[1] << 8 | adc1Buffer[0];
                 break;
-            case MyEnumLineSensor.SensorM:
+            case CapteurDeLigne.CapteurM:
                 pins.i2cWriteNumber(ADRESSEI2C, ADC2_REGISTER, NumberFormat.Int8LE);
                 let adc2Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc2Buffer[1] << 8 | adc2Buffer[0];
                 break;
-            case MyEnumLineSensor.SensorL1:
+            case CapteurDeLigne.CapteurL1:
                 pins.i2cWriteNumber(ADRESSEI2C, ADC3_REGISTER, NumberFormat.Int8LE);
                 let adc3Buffer = pins.i2cReadBuffer(ADRESSEI2C, 2);
                 data = adc3Buffer[1] << 1 | adc3Buffer[0];
@@ -560,26 +560,26 @@ namespace monrobot {
     //% endHue.defl=360
     //% startHue.min=0 startHue.max=360
     //% endHue.min=0 endHue.max=360
-    //% blockId=led_rainbow block="afficher arc en ciel sur LEDs RGB de|%startHue à|%endHue"
-    export function ledRainbow(startHue: number, endHue: number) {
-        startHue = startHue >> 0;
-        endHue = endHue >> 0;
+    //% blockId=led_rainbow block="afficher arc en ciel sur LEDs RGB de|%couleurDeDepart à|%couleurArrivee"
+    export function ledRainbow(couleurDeDepart: number, couleurArrivee: number) {
+        couleurDeDepart = couleurDeDepart >> 0;
+        couleurArrivee = couleurArrivee >> 0;
         const saturation = 100;
         const luminance = 50;
         let steps = 3 + 1;
-        const direction = HueInterpolationDirection.Clockwise;
+        const direction = DirectionInterpolationCouleur.SensDesAiguillesDUneMontre;
 
         //hue
-        const h1 = startHue;
-        const h2 = endHue;
+        const h1 = couleurDeDepart;
+        const h2 = couleurArrivee;
         const hDistCW = ((h2 + 360) - h1) % 360;
         const hStepCW = Math.idiv((hDistCW * 100), steps);
         const hDistCCW = ((h1 + 360) - h2) % 360;
         const hStepCCW = Math.idiv(-(hDistCCW * 100), steps);
         let hStep: number;
-        if (direction === HueInterpolationDirection.Clockwise) {
+        if (direction === DirectionInterpolationCouleur.SensDesAiguillesDUneMontre) {
             hStep = hStepCW;
-        } else if (direction === HueInterpolationDirection.CounterClockwise) {
+        } else if (direction === DirectionInterpolationCouleur.InverseSensDesAiguillesDUneMontre) {
             hStep = hStepCCW;
         } else {
             hStep = hDistCW < hDistCCW ? hStepCW : hStepCCW;
@@ -604,22 +604,22 @@ namespace monrobot {
         if (steps === 1) {
             writeBuff(0, hsl(h1 + hStep, s1 + sStep, l1 + lStep))
         } else {
-            writeBuff(0, hsl(startHue, saturation, luminance));
+            writeBuff(0, hsl(couleurDeDepart, saturation, luminance));
             for (let i = 1; i < steps - 1; i++) {
                 const h = Math.idiv((h1_100 + i * hStep), 100) + 360;
                 const s = Math.idiv((s1_100 + i * sStep), 100);
                 const l = Math.idiv((l1_100 + i * lStep), 100);
                 writeBuff(0 + i, hsl(h, s, l));
             }
-            writeBuff(3, hsl(endHue, saturation, luminance));
+            writeBuff(3, hsl(couleurArrivee, saturation, luminance));
         }
         ws2812b.sendBuffer(neopixel_buf, DigitalPin.P15)
     }
 
-    export enum HueInterpolationDirection {
-        Clockwise,
-        CounterClockwise,
-        Shortest
+    export enum DirectionInterpolationCouleur {
+        SensDesAiguillesDUneMontre,
+        InverseSensDesAiguillesDUneMontre,
+        AuPlusCourt
     }
 
     function writeBuff(index: number, rgb: number) {
